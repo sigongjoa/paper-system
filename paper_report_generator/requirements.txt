@@ -1,0 +1,4 @@
+sqlalchemy>=2.0.0
+reportlab
+flask
+gunicorn 

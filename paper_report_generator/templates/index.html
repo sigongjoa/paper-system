@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>논문 요약 보고서 생성기</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>논문 요약 보고서 생성기</h1>
+        <form id="reportForm">
+            <div class="form-group">
+                <label for="report_date">날짜 선택:</label>
+                <input type="date" id="report_date" name="report_date" required>
+            </div>
+            <div class="form-group">
+                <label for="top_n">상위 N개 논문 (선택 사항):</label>
+                <input type="number" id="top_n" name="top_n" min="1" placeholder="예: 10">
+            </div>
+            <button type="submit">보고서 생성</button>
+        </form>
+        <div id="message" class="message"></div>
+        <div id="pdfViewer" class="pdf-viewer">
+            <!-- PDF Viewer will be embedded here -->
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html> 
