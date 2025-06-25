@@ -1,0 +1,3 @@
+venv_citation_graph/
+venv_daily_crawler/
+*.db 

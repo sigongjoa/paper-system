@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>논문 크롤링 결과</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>논문 크롤링 및 검색</h1>
+        <div class="controls">
+            <div class="control-group">
+                <h3>데이터 초기화 크롤링</h3>
+                <label for="initStartDate">시작 날짜:</label>
+                <input type="date" id="initStartDate">
+                <label for="initEndDate">종료 날짜:</label>
+                <input type="date" id="initEndDate">
+                <button id="initializeRangeButton">선택 날짜 범위 크롤링 및 초기화</button>
+            </div>
+            <div class="control-group">
+                <h3>데이터 추가 크롤링</h3>
+                <label for="addStartDate">시작 날짜:</label>
+                <input type="date" id="addStartDate">
+                <label for="addEndDate">종료 날짜:</label>
+                <input type="date" id="addEndDate">
+                <button id="addRangeButton">선택 날짜 범위 데이터 추가 크롤링</button>
+            </div>
+        </div>
+        <div id="message" class="message"></div>
+        <div class="paper-list">
+            {% for paper in papers %}
+            <div class="paper-item {% if latest_crawled_date and paper.crawled_date and paper.crawled_date.isoformat().split('T')[0] == latest_crawled_date.split('T')[0] %}new-paper{% endif %}">
+                <h2><a href="{{ paper.pdf_url }}" target="_blank">{{ paper.title }}</a></h2>
+                <p><strong>저자:</strong> {{ paper.authors }}</p>
+                <p><strong>발행일:</strong> {{ paper.published_date.strftime('%Y년 %m월 %d일') }}</p>
+                <p><strong>플랫폼:</strong> {{ paper.platform }}</p>
+                <p><strong>초록:</strong> {{ paper.abstract }}</p>
+                <p class="crawled-date">크롤링 날짜: {{ paper.crawled_date.strftime('%Y년 %m월 %d일 %H시 %M분') }}</p>
+            </div>
+            {% else %}
+            <p>아직 크롤링된 논문이 없습니다.</p>
+            {% endfor %}
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html> 

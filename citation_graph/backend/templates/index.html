@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>논문 인용 관계 시각화</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Vis.js CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+    <div class="container">
+        <h1>논문 인용 관계 시각화</h1>
+        <div class="search-section">
+            <input type="text" id="paperIdInput" placeholder="논문 ID (예: 1706.03762)" />
+            <input type="number" id="depthInput" value="1" min="1" placeholder="탐색 깊이 (기본: 1)" />
+            <button id="fetchGraphBtn">그래프 생성</button>
+        </div>
+        <div id="network"></div>
+        <div id="paperDetails" class="paper-details">
+            <h2>논문 상세 정보</h2>
+            <p><strong>제목:</strong> <span id="detailTitle"></span></p>
+            <p><strong>저자:</strong> <span id="detailAuthors"></span></p>
+            <p><strong>발행 연도:</strong> <span id="detailYear"></span></p>
+            <p><strong>초록:</strong> <span id="detailAbstract"></span></p>
+            <p><a id="detailPdfUrl" href="#" target="_blank">PDF 링크</a></p>
+            <button id="closeDetailsBtn">닫기</button>
+        </div>
+    </div>
+
+    <!-- Vis.js Library -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html> 
