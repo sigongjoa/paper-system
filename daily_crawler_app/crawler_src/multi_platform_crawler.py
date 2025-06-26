@@ -1039,12 +1039,28 @@ def multi_platform_crawl(query: str, platforms: list = None, max_results: int = 
         platforms = config.SUPPORTED_CRAWLER_PLATFORMS
     
     for platform in platforms:
+        if max_results > 0 and len(all_papers) >= max_results:
+            logger.debug(f"Total papers collected ({len(all_papers)}) reached max_results ({max_results}). Stopping further platform crawling.")
+            break
+
         logger.info(f"[{platform.upper()}] 크롤링 시작...")
         try:
             crawler = get_crawler(platform)
             papers_from_platform = []
-            for paper in crawler.crawl_papers(query=query, start_date=start_date, end_date=end_date, limit=max_results):
+            # 각 크롤러에서 필요한 만큼만 가져오도록 limit을 조정
+            remaining_limit = max_results - len(all_papers) if max_results > 0 else -1
+            if remaining_limit == 0:
+                logger.debug(f"Reached max_results ({max_results}), skipping {platform} crawling.")
+                continue
+
+            # individual crawler.crawl_papers 에 남은 한도를 전달
+            current_platform_limit = remaining_limit if remaining_limit > 0 else None
+
+            for paper in crawler.crawl_papers(query=query, start_date=start_date, end_date=end_date, limit=current_platform_limit):
                 papers_from_platform.append(paper.to_dict())
+                if max_results > 0 and len(all_papers) + len(papers_from_platform) >= max_results:
+                    logger.debug(f"Collected enough papers from {platform}. Breaking inner loop.")
+                    break
             
             logger.info(f"[{platform.upper()}] {len(papers_from_platform)}개 논문 크롤링 완료.")
             all_papers.extend(papers_from_platform)

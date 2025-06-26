@@ -3,6 +3,8 @@ import datetime
 import logging
 import re
 import os
+import requests
+import json
 from sqlalchemy import create_engine, Column, String, Text, DateTime, JSON, Integer, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
@@ -17,6 +19,10 @@ from reportlab.pdfbase.ttfonts import TTFont
 # 로깅 설정
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# LM Studio API 설정
+LM_STUDIO_API_URL = "http://127.0.0.1:1234/v1/chat/completions"
+LM_STUDIO_MODEL = "lgai-exaone.exaone-3.5-7.8b-instruct"
 
 # 텍스트 정리 함수: HTML 태그 제거 및 ReportLab에 안전한 문자열로 변환 (유효하지 않은 XML 문자 제거 포함)
 def sanitize_text_for_pdf(text):
@@ -42,14 +48,87 @@ def sanitize_text_for_pdf(text):
 
     return text
 
-# LLM을 통한 초록 요약 (추후 LLM 모델 연동)
+# LLM을 통한 초록 요약 (LM Studio 연동)
 def summarize_abstract_with_llm(abstract: str) -> str:
     logger.debug("summarize_abstract_with_llm 함수 시작")
-    # TODO: 여기에 실제 LLM 모델을 사용하여 초록을 요약하는 로직을 추가합니다.
-    # 현재는 원본 초록을 그대로 반환합니다.
-    summarized_abstract = abstract
-    logger.debug("summarize_abstract_with_llm 함수 종료")
-    return summarized_abstract
+    if not abstract:
+        logger.debug("초록 내용이 없어 요약 건너뛰기")
+        return "요약할 초록 내용이 없습니다."
+
+    headers = {"Content-Type": "application/json"}
+    payload = {
+        "model": LM_STUDIO_MODEL,
+        "messages": [
+            {"role": "system", "content": "You are a helpful assistant that summarizes academic paper abstracts concisely."},
+            {"role": "user", "content": f"Summarize the following abstract concisely in Korean: {abstract}"}
+        ],
+        "temperature": 0.3,
+        "max_tokens": 150 # 요약 길이 제한
+    }
+
+    try:
+        response = requests.post(LM_STUDIO_API_URL, headers=headers, json=payload, timeout=30)
+        response.raise_for_status() # HTTP 오류 발생 시 예외 발생
+        completion = response.json()
+        if completion and 'choices' in completion and completion['choices']:
+            summarized_text = completion['choices'][0]['message']['content'].strip()
+            logger.debug(f"LLM 요약 성공: {summarized_text[:50]}...")
+            return summarized_text
+        else:
+            logger.warning("LM Studio API 응답에서 유효한 요약 결과를 찾을 수 없습니다.")
+            return abstract # LLM 응답이 없으면 원본 반환
+    except requests.exceptions.RequestException as e:
+        logger.error(f"LM Studio API 요청 중 오류 발생: {e}")
+        return abstract # 오류 발생 시 원본 초록 반환
+    except json.JSONDecodeError as e:
+        logger.error(f"LM Studio API 응답 JSON 파싱 오류: {e}")
+        return abstract # JSON 파싱 오류 발생 시 원본 초록 반환
+    finally:
+        logger.debug("summarize_abstract_with_llm 함수 종료")
+
+# LLM을 통한 페르소나 기반 논문 중요도 판단
+def judge_paper_importance_with_llm(paper: dict, persona: str) -> bool:
+    logger.debug(f"judge_paper_importance_with_llm 함수 시작 - 논문: {paper.get('title')}, 페르소나: {persona}")
+    
+    if not persona:
+        logger.warning("페르소나 정보가 없어 중요도 판단 건너뛰기")
+        return True # 페르소나 없으면 일단 중요하다고 가정
+
+    headers = {"Content-Type": "application/json"}
+    payload = {
+        "model": LM_STUDIO_MODEL,
+        "messages": [
+            {"role": "system", "content": f"You are an AI assistant that evaluates the importance of academic papers for a specific persona. Respond with 'YES' if the paper is highly relevant and important to the persona, and 'NO' otherwise. Provide a brief reason."},
+            {"role": "user", "content": f"Persona: '{persona}'. Paper Title: '{paper.get('title')}', Abstract: '{paper.get('abstract')}', Categories: '{', '.join(paper.get('categories', []))}'. Is this paper important to the persona? (YES/NO)"}
+        ],
+        "temperature": 0.2,
+        "max_tokens": 50 # 짧은 답변 (YES/NO + 이유)
+    }
+
+    try:
+        response = requests.post(LM_STUDIO_API_URL, headers=headers, json=payload, timeout=30)
+        response.raise_for_status()
+        completion = response.json()
+        if completion and 'choices' in completion and completion['choices']:
+            llm_response = completion['choices'][0]['message']['content'].strip().upper()
+            # LLM 응답 시작 부분의 마크다운 볼드체 제거 (예: **YES** -> YES)
+            if llm_response.startswith('**'):
+                llm_response = llm_response.lstrip('*').strip() # Leading ** 제거 및 공백 정리
+            
+            is_important = llm_response.startswith("YES")
+            logger.debug(f"LLM 중요도 판단 결과: {llm_response} -> 중요도: {is_important}")
+            return is_important
+        else:
+            logger.warning("LM Studio API 응답에서 유효한 중요도 판단 결과를 찾을 수 없습니다.")
+            return True # 응답 없으면 기본적으로 중요하다고 가정
+    except requests.exceptions.RequestException as e:
+        logger.error(f"LM Studio API 요청 중 오류 발생: {e}")
+        return True # 오류 발생 시 기본적으로 중요하다고 가정
+    except json.JSONDecodeError as e:
+        logger.error(f"LM Studio API 응답 JSON 파싱 오류: {e}")
+        return True # JSON 파싱 오류 발생 시 기본적으로 중요하다고 가정
+    finally:
+        logger.debug("judge_paper_importance_with_llm 함수 종료")
 
 # 한글 폰트 등록
 try:
@@ -142,8 +221,8 @@ def get_papers_by_date_and_category(session, target_date, category=None):
     logger.debug(f"get_papers_by_date_and_category 함수 종료 - 찾은 논문 수: {len(papers)}")
     return papers
 
-def generate_pdf_report(output_filename, papers, report_date, category=None):
-    logger.debug(f"generate_pdf_report 함수 시작 - output_filename: {output_filename}, 논문 수: {len(papers)}")
+def generate_pdf_report(output_filename, papers, report_date, category=None, persona=None):
+    logger.debug(f"generate_pdf_report 함수 시작 - output_filename: {output_filename}, 논문 수: {len(papers)}, 페르소나: {persona}")
     doc = SimpleDocTemplate(output_filename, pagesize=letter,
                             rightMargin=inch/2, leftMargin=inch/2,
                             topMargin=inch/2, bottomMargin=inch/2)
@@ -278,6 +357,27 @@ def generate_pdf_report(output_filename, papers, report_date, category=None):
     story.append(PageBreak())
 
     # Papers Content Section (Card Layout)
+    # 페르소나 기반으로 논문 필터링
+    if persona:
+        logger.debug(f"페르소나 '{persona}'에 따라 논문 필터링 시작")
+        filtered_papers = []
+        for paper in papers:
+            # Paper 객체를 dict로 변환하여 judge_paper_importance_with_llm에 전달
+            paper_dict = {
+                "title": paper.title,
+                "abstract": paper.abstract,
+                "categories": paper.categories
+            }
+            if judge_paper_importance_with_llm(paper_dict, persona):
+                filtered_papers.append(paper)
+            else:
+                logger.debug(f"논문 '{paper.title}'은(는) 페르소나 '{persona}'에게 중요하지 않아 제외됨.")
+        papers = filtered_papers # 필터링된 논문으로 대체
+        logger.debug(f"페르소나 필터링 후 남은 논문 수: {len(papers)}")
+        if not papers:
+            logger.warning(f"페르소나 '{persona}'에 해당하는 논문이 없어 PDF 보고서를 생성할 수 없습니다.")
+            return # 논문이 없으면 함수 종료
+
     for i, paper in enumerate(papers):
         logger.debug(f"PDF에 논문 추가 중 (카드 형식): {paper.title}")
 
@@ -438,13 +538,18 @@ def main():
     parser = argparse.ArgumentParser(description="Generate a PDF report of papers for a specific date and category.")
     parser.add_argument("--date", type=str, required=True, help="Date in YYYY-MM-DD format (e.g., 2023-01-01)")
     parser.add_argument("--category", type=str, help="Optional: Specific category to filter papers by (e.g., 'Computer Science')")
-    parser.add_argument("--output", type=str, default="paper_report.pdf", help="Output PDF filename")
+    parser.add_argument("--output", type=str, default="paper_report.pdf", help="Output PDF filename. Default is paper_report.pdf")
     parser.add_argument("--top_n", type=int, help="Optional: Number of top papers to include in the report (e.g., 10). If not specified, all papers for the date/category will be included. Currently, this selects the first N papers from the query results.")
+    parser.add_argument("--persona", type=str, help="Optional: Specific persona to filter papers by")
 
     args = parser.parse_args()
 
     try:
-        report_date = datetime.datetime.strptime(args.date, "%Y-%m-%d").date()
+        report_date = datetime.datetime.strptime(args.date, '%Y-%m-%d')
+        category = args.category if args.category != 'all' else None
+        output_path = args.output
+        top_n = args.top_n
+        persona = args.persona
     except ValueError:
         logger.error("잘못된 날짜 형식입니다. YYYY-MM-DD 형식을 사용하세요.")
         return
@@ -452,18 +557,18 @@ def main():
     session = SessionLocal()
     try:
         logger.debug("데이터베이스 세션 시작")
-        papers = get_papers_by_date_and_category(session, report_date, args.category)
+        papers = get_papers_by_date_and_category(session, report_date, category)
 
         # LLM 기반 중요도 정렬 또는 랜덤 선택 (추후 구현)
-        if args.top_n:
-            logger.debug(f"상위 {args.top_n}개 논문 선택 (현재는 조회 순서대로).")
-            papers = papers[:args.top_n]
+        if top_n:
+            logger.debug(f"상위 {top_n}개 논문 선택 (현재는 조회 순서대로).")
+            papers = papers[:top_n]
 
         if not papers:
             logger.info(f"지정된 날짜 ({args.date}) 및 카테고리 ({args.category if args.category else '모든 카테고리'})에 해당하는 논문이 없습니다.")
             return
 
-        generate_pdf_report(args.output, papers, report_date, args.category)
+        generate_pdf_report(output_path, papers, report_date, category, persona)
     except Exception as e:
         logger.error(f"보고서 생성 중 예외 발생: {e}")
     finally:

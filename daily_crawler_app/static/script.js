@@ -11,7 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const addEndDateInput = document.getElementById('addEndDate');
     const addRangeButton = document.getElementById('addRangeButton');
     
+    const maxPapersInput = document.getElementById('maxPapers');
     const messageDiv = document.getElementById('message');
+    const clearDisplayButton = document.getElementById('clearDisplayButton');
+    const paperListDiv = document.querySelector('.paper-list');
 
     // 오늘 날짜로 기본값 설정
     const today = new Date();
@@ -58,7 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     start_date: startDate,
                     end_date: endDate,
-                    is_initial_crawl: isInitialCrawl
+                    is_initial_crawl: isInitialCrawl,
+                    max_papers: parseInt(maxPapersInput.value)
                 }),
             });
             console.debug(`Fetch request sent: start=${startDate}, end=${endDate}, initial=${isInitialCrawl}`);
@@ -95,6 +99,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const startDate = addStartDateInput.value;
             const endDate = addEndDateInput.value;
             sendCrawlRequest(startDate, endDate, false);
+        });
+    }
+
+    if (clearDisplayButton) {
+        clearDisplayButton.addEventListener('click', () => {
+            console.debug("Clear Display button clicked.");
+            if (paperListDiv) {
+                paperListDiv.innerHTML = '<p>화면의 논문 목록이 초기화되었습니다.</p>';
+                console.debug("Paper list cleared.");
+            }
         });
     }
 

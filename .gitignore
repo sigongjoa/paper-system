@@ -1,10 +1,22 @@
-venv_citation_graph/
-venv_daily_crawler/
-*.db
+# Python virtual environments
+venv/
+venv_*
+
+# Byte-code files
 __pycache__/
 *.pyc
-*.log
+
+# Database files
 *.sqlite3
+*.db
+
+# Generated reports and temporary files
+*.pdf
+combined_requirements.txt
+check_db.py
+
+venv_citation_graph/
+venv_daily_crawler/
+*.log
 .DS_Store
-venv/
 *.env 

@@ -63,6 +63,9 @@ def crawl_data():
     start_date_str = request_data.get('start_date')
     end_date_str = request_data.get('end_date')
     is_initial_crawl = request_data.get('is_initial_crawl', False) # 기본값은 False
+    max_papers = request_data.get('max_papers', 0) # 기본값은 0 (제한 없음)
+
+    logger.debug(f"Received crawl request: start_date={start_date_str}, end_date={end_date_str}, is_initial_crawl={is_initial_crawl}, max_papers={max_papers}")
 
     if not start_date_str or not end_date_str:
         logger.debug("시작 날짜 또는 종료 날짜가 제공되지 않았습니다.")
@@ -92,13 +95,13 @@ def crawl_data():
         logger.debug(f"{start_date_str}부터 {end_date_str}까지의 데이터 추가 크롤링 시작")
 
     try:
-        logger.debug(f"multi_platform_crawl 함수 호출 직전 (날짜 범위: {start_date_obj.date()} ~ {end_date_obj.date()})")
+        logger.debug(f"multi_platform_crawl 함수 호출 직전 (날짜 범위: {start_date_obj.date()} ~ {end_date_obj.date()}, 최대 논문 수: {max_papers})")
         crawled_papers_generator = multi_platform_crawl(
             query="research",
             platforms=Config.SUPPORTED_CRAWLER_PLATFORMS, # 모든 플랫폼 사용
             start_date=start_date_obj,
             end_date=end_date_obj,
-            max_results=Config.DEFAULT_CRAWLER_MAX_RESULTS # config에서 설정된 값 사용
+            max_results=max_papers if max_papers > 0 else Config.DEFAULT_CRAWLER_MAX_RESULTS # max_papers가 0보다 크면 그 값을 사용, 아니면 config 값 사용
         )
         logger.debug(f"multi_platform_crawl 함수 호출 직후 (날짜 범위: {start_date_obj.date()} ~ {end_date_obj.date()})")
         crawled_papers = list(crawled_papers_generator)

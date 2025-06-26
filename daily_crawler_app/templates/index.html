@@ -26,6 +26,15 @@
                 <input type="date" id="addEndDate">
                 <button id="addRangeButton">선택 날짜 범위 데이터 추가 크롤링</button>
             </div>
+            <div class="control-group">
+                <h3>크롤링 설정</h3>
+                <label for="maxPapers">최대 크롤링 논문 개수 (0은 제한 없음):</label>
+                <input type="number" id="maxPapers" value="0" min="0">
+            </div>
+            <div class="control-group">
+                <h3>화면 제어</h3>
+                <button id="clearDisplayButton">화면 초기화</button>
+            </div>
         </div>
         <div id="message" class="message"></div>
         <div class="paper-list">
