@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>논문 관리 시스템</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>논문 관리 및 리포트 생성</h1>
+
+        <div class="filter-section">
+            <input type="date" id="dateInput">
+            <input type="text" id="categoryInput" placeholder="카테고리 (예: AI)">
+            <input type="number" id="topNInput" placeholder="표시할 논문 수 (선택 사항)">
+            <button id="filterButton">논문 조회</button>
+        </div>
+
+        <div class="papers-list">
+            <h2>크롤링된 논문 목록</h2>
+            <div id="paperCards" class="card-grid"></div>
+        </div>
+
+        <div class="report-section">
+            <h2>선택된 논문으로 리포트 생성</h2>
+            <p>리포트로 만들 논문을 위 목록에서 선택하세요.</p>
+            <button id="generateReportButton" disabled>리포트 생성</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
