@@ -224,8 +224,8 @@ def get_papers_by_date_and_category(session, target_date, category=None):
 def generate_pdf_report(output_filename, papers, report_date, category=None, persona=None):
     logger.debug(f"generate_pdf_report 함수 시작 - output_filename: {output_filename}, 논문 수: {len(papers)}, 페르소나: {persona}")
     doc = SimpleDocTemplate(output_filename, pagesize=letter,
-                            rightMargin=inch/2, leftMargin=inch/2,
-                            topMargin=inch/2, bottomMargin=inch/2)
+                            rightMargin=inch*0.4, leftMargin=inch*0.4,
+                            topMargin=inch*0.4, bottomMargin=inch*0.4)
     styles = getSampleStyleSheet()
 
     # 한글 폰트 스타일 추가 및 업데이트
@@ -353,7 +353,7 @@ def generate_pdf_report(output_filename, papers, report_date, category=None, per
     header_table = Table(header_content, colWidths=[letter[0] - inch]) # 페이지 너비 - 좌우 여백
     header_table.setStyle(header_table_style)
     story.append(header_table)
-    story.append(Spacer(1, 0.2 * inch)) # 간격 줄임
+    story.append(Spacer(1, 0.15 * inch)) # 간격 줄임
     story.append(PageBreak())
 
     # Papers Content Section (Card Layout)
@@ -416,13 +416,13 @@ def generate_pdf_report(output_filename, papers, report_date, category=None, per
         # 카드 내용을 위한 메인 테이블 데이터
         card_content_data = [
             [Paragraph(sanitized_title, styles['CardTitle'])],
-            [Spacer(1, 0.05 * inch)], # 제목 아래 간격
+            [Spacer(1, 0.03 * inch)], # 제목 아래 간격
             [Paragraph(f"👤 저자: {sanitized_authors}", styles['CardBody'])],
-            [Spacer(1, 0.1 * inch)], # 저자 아래 간격
+            [Spacer(1, 0.05 * inch)], # 저자 아래 간격
             [meta_data_table], # 메타데이터 중첩 테이블
-            [Spacer(1, 0.1 * inch)], # 플랫폼/날짜/카테고리 아래 간격
+            [Spacer(1, 0.05 * inch)], # 플랫폼/날짜/카테고리 아래 간격
             [Paragraph(f"🔗 PDF URL: {sanitized_pdf_url} ↗️", styles['PdfUrl'])],
-            [Spacer(1, 0.2 * inch)], # URL 아래 간격
+            [Spacer(1, 0.1 * inch)], # URL 아래 간격
             [Paragraph("<font face='MalgunGothicBd'>초록:</font>", styles['NormalKorean'])], # 초록 레이블 굵게
             [Paragraph(sanitized_abstract, styles['AbstractKorean'])]
         ]
@@ -432,10 +432,10 @@ def generate_pdf_report(output_filename, papers, report_date, category=None, per
             ('BACKGROUND', (0,0), (-1,-1), colors.white),
             ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#e5e7eb')), # Tailwind gray-200 border
             ('ROUNDEDCORNERS', [8,8,8,8]), # 둥근 모서리
-            ('LEFTPADDING', (0,0), (-1,-1), 20),
-            ('RIGHTPADDING', (0,0), (-1,-1), 20),
-            ('TOPPADDING', (0,0), (-1,-1), 10),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+            ('LEFTPADDING', (0,0), (-1,-1), 15),
+            ('RIGHTPADDING', (0,0), (-1,-1), 15),
+            ('TOPPADDING', (0,0), (-1,-1), 8),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 8),
             ('ALIGN', (0,0), (-1,-1), 'LEFT'),
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ])
@@ -444,12 +444,12 @@ def generate_pdf_report(output_filename, papers, report_date, category=None, per
         card_table.setStyle(card_table_style)
 
         story.append(card_table)
-        story.append(Spacer(1, 0.2 * inch)) # 카드 간 간격 줄임
+        story.append(Spacer(1, 0.15 * inch)) # 카드 간 간격 줄임
 
     # Advertisement Section (at the very end)
     story.append(PageBreak()) # Start ads on a new page
     story.append(Paragraph("광고 섹션", styles['TitleKorean']))
-    story.append(Spacer(1, 0.2 * inch)) # 간격 줄임
+    story.append(Spacer(1, 0.15 * inch)) # 간격 줄임
 
     # 광고 카드 데이터 (3열)
     ad_card_1_content = [
